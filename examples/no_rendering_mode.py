@@ -1263,7 +1263,7 @@ class World(object):
         self._render_vehicles(surface, vehicles, self.map_image.world_to_pixel)
         self._render_walkers(surface, walkers, self.map_image.world_to_pixel)
         
-        if len(HERO_CORNERS) > 500:
+        if len(HERO_CORNERS) > 1000:
             BIG_MAP_SURFACE.blit(surface, (0, 0))
             pygame.image.save(BIG_MAP_SURFACE, './cache/no_rendering_mode/mymap.tga')
             exit()
