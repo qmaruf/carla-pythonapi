@@ -149,6 +149,9 @@ HERO_DEFAULT_SCALE = 1.0
 
 PIXELS_AHEAD_VEHICLE = 150
 
+HERO_CORNERS = []
+BIG_MAP_SURFACE = None
+
 # ==============================================================================
 # -- Util -----------------------------------------------------------
 # ==============================================================================
@@ -311,6 +314,7 @@ class HUD (object):
             vehicle_id_surface.set_alpha(150)
             for actor in list_actors:
                 x, y = world_to_pixel(actor[1].location)
+                print (x, y)
 
                 angle = 0
                 if hero_actor is not None:
@@ -499,6 +503,8 @@ class MapImage(object):
             pygame.image.save(self.big_map_surface, full_path)
 
         self.surface = self.big_map_surface
+        global BIG_MAP_SURFACE
+        BIG_MAP_SURFACE = self.big_map_surface        
 
     def draw_road_map(self, map_surface, carla_world, carla_map, world_to_pixel, world_to_pixel_width):
         """Draws all the roads, including lane markings, arrows and traffic signs"""
@@ -859,8 +865,10 @@ class MapImage(object):
 
     def world_to_pixel(self, location, offset=(0, 0)):
         """Converts the world coordinates to pixel coordinates"""
+        
         x = self.scale * self._pixels_per_meter * (location.x - self._world_offset[0])
         y = self.scale * self._pixels_per_meter * (location.y - self._world_offset[1])
+        # print (x, y)
         return [int(x - offset[0]), int(y - offset[1])]
 
     def world_to_pixel_width(self, width):
@@ -1230,7 +1238,19 @@ class World(object):
                        ]
             v[1].transform(corners)
             corners = [world_to_pixel(p) for p in corners]
-            pygame.draw.lines(surface, color, False, corners, int(math.ceil(4.0 * self.map_image.scale)))
+            if v[0].attributes['role_name'] == 'hero':
+                HERO_CORNERS.append(corners)
+                for nc, corners in enumerate(HERO_CORNERS):
+                    if nc%25==0:
+                        pygame.draw.lines(surface, color, False, corners, int(math.ceil(4.0 * self.map_image.scale)))
+                        
+            else:
+                rect = pygame.draw.lines(surface, color, False, corners, int(math.ceil(4.0 * self.map_image.scale)))
+                # pygame.image.save(rect, './cache/no_rendering_mode/mymap_s.tga')
+                # exit()
+
+                
+            
 
     def render_actors(self, surface, vehicles, traffic_lights, speed_limits, walkers):
         """Renders all the actors"""
@@ -1242,6 +1262,11 @@ class World(object):
         # Dynamic actors
         self._render_vehicles(surface, vehicles, self.map_image.world_to_pixel)
         self._render_walkers(surface, walkers, self.map_image.world_to_pixel)
+        
+        if len(HERO_CORNERS) > 500:
+            BIG_MAP_SURFACE.blit(surface, (0, 0))
+            pygame.image.save(BIG_MAP_SURFACE, './cache/no_rendering_mode/mymap.tga')
+            exit()
 
     def clip_surfaces(self, clipping_rect):
         """Used to improve perfomance. Clips the surfaces in order to render only the part of the surfaces that are going to be visible"""
@@ -1532,6 +1557,7 @@ def game_loop(args):
 
         # Game loop
         clock = pygame.time.Clock()
+        
         while True:
             clock.tick_busy_loop(60)
 
@@ -1545,6 +1571,8 @@ def game_loop(args):
             world.render(display)
             hud.render(display)
             input_control.render(display)
+            
+            
 
             pygame.display.flip()
 
